@@ -100,8 +100,6 @@ level_starts = [
     for level_name in level_names
 ]
 
-write_level_start('blah.lvl', level_starts[0])
-
 
 # M = Objects.MOMO
 # W = Objects.WALL

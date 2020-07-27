@@ -1,5 +1,4 @@
 # Level board starting states
-# TODO: read these layouts from external files
 
 import os
 

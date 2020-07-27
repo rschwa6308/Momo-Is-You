@@ -1,6 +1,9 @@
 # Micah Johnson and Russell Schwartz
 # August 2019
 
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"   # grrr
+
 from engine import Level
 from levels import level_starts
 from ui_helpers import *

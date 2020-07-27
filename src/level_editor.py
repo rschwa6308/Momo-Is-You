@@ -1,5 +1,7 @@
 # Standalone GUI Applet for creating levels
 
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 
 from ui_helpers import *
@@ -17,6 +19,7 @@ VIEWPORT_BACKGROUND_COLOR = (15, 15, 15)
 GRID_COLOR = (0, 80, 90, 127)
 
 TARGET_FPS = 60
+
 
 # Draw the level onto a fresh viewport surface, render UI elements, blit them to the screen, and flip the display
 # only re-draws the board layer if corresponding flag is set; otherwise, cached surface is used
@@ -70,11 +73,6 @@ def pixels_to_tiles(x_px, y_px, viewport_rect, board_width_tiles, board_height_t
     y_tiles = int(float(y_px) / viewport_rect.height * board_height_tiles)
 
     return x_tiles, y_tiles
-
-
-
-def perform_click(pos_px, viewport_rect, board_dims, selected):
-    pass
 
 
 # Initializes display, listens for keypress's, and handles window re-size events
@@ -141,7 +139,6 @@ def run_editor(board=None):
                     write_level_start("test_output.lvl", board)
                     print("level saved!")
         
-
 
 if __name__ == "__main__":
     run_editor(level_starts[0])

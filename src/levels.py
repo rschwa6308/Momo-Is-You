@@ -68,7 +68,6 @@ def read_level_start(filename):
     return level_start
 
 
-
 # Write a given level-start to a given filename
 def write_level_start(filename, board):
     if not filename.endswith(".lvl"):
@@ -90,7 +89,6 @@ def write_level_start(filename, board):
     abs_filename = os.path.join(SAVED_LEVELS_DIR, filename)
     with open(abs_filename, mode='w') as f:
         f.write(out)
-
 
 
 # --- Load All Levels --- #

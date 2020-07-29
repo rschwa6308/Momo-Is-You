@@ -77,6 +77,13 @@ entity_map = {
         "text_color": (255, 255, 255),
         "draw_precedence": 2
     },
+    Verbs.HAS: {
+        "color": None,
+        "src_image_id": None,
+        "text_str": "HAS",
+        "text_color": (255, 255, 255),
+        "draw_precedence": 2
+    },
 
     Adjectives.YOU: {
         "color": None,
@@ -162,6 +169,7 @@ text_locations = {
 
 
 # draws a square with rounded corners onto the given tile Surface
+# TODO: anti-alias corners
 def draw_text_card_onto_tile(tile, color):
     tile_size_px = tile.get_width()
     corner_radius = tile_size_px // 6

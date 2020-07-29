@@ -6,10 +6,11 @@ import pygame
 
 from ui_helpers import *
 from levels import level_starts, write_level_start
+# from entities import *
 
 
 # --- UI-Related Constants --- #
-STARTING_SCREEN_WIDTH, STARTING_SCREEN_HEIGHT = 800, 600  # starting dimensions of screen (px)
+STARTING_SCREEN_WIDTH, STARTING_SCREEN_HEIGHT = 1000, 600  # starting dimensions of screen (px)
 MIN_SCREEN_WIDTH = 160
 MIN_SCREEN_HEIGHT = 120
 VIEWPORT_MIN_PADDING = 50  # minimum viewport edge padding (px)
@@ -19,6 +20,39 @@ VIEWPORT_BACKGROUND_COLOR = (15, 15, 15)
 GRID_COLOR = (0, 80, 90, 127)
 
 TARGET_FPS = 60
+
+
+# --- Level-Related Constants --- #
+# the layout of entities in the palette (must be rectangular)
+PALETTE_LAYOUT = [
+    [Nouns.MOMO, Objects.MOMO],
+    [Nouns.WALL, Objects.WALL],
+    [Nouns.ROCK, Objects.ROCK],
+    [Nouns.FLAG, Objects.FLAG],
+    [Nouns.WATER, Objects.WATER],
+    [None, None],
+    [Adjectives.YOU, Adjectives.WIN],
+    [Adjectives.STOP, Adjectives.PUSH],
+    [Adjectives.DEFEAT, Adjectives.SINK],
+    [None, None],
+    [Verbs.IS, Verbs.HAS]
+]
+
+PALETTE_WIDTH = len(PALETTE_LAYOUT[0])
+PALETTE_HEIGHT = len(PALETTE_LAYOUT)
+
+# build palette board for easy rendering purposes (None -> empty cell)
+PALETTE_BOARD = [
+    [[e] if e else [] for e in row]
+    for row in PALETTE_LAYOUT
+]
+
+# Valid board size ranges (inclusive)
+BOARD_WIDTH_RANGE = (5, 35)
+BOARD_HEIGHT_RANGE = (5, 25)
+
+# Size of the default empty board
+BOARD_DEFAULT_DIMS = (21, 15)
 
 
 # Draw the level onto a fresh viewport surface, render UI elements, blit them to the screen, and flip the display
@@ -36,7 +70,9 @@ def update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redr
     screen.blit(board_layer, main_viewport_rect)
 
     palette_layer = pygame.Surface((palette_viewport_rect.width, palette_viewport_rect.height))
-    palette_layer.fill(VIEWPORT_BACKGROUND_COLOR)
+    # palette_layer.fill(VIEWPORT_BACKGROUND_COLOR)
+    draw_board_onto_viewport(palette_layer, PALETTE_BOARD, VIEWPORT_BACKGROUND_COLOR)
+
     screen.blit(palette_layer, palette_viewport_rect)
 
     if selected_entity and cursor_position:
@@ -52,11 +88,11 @@ def update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redr
 # Size the 'root', 'main', and 'palette' viewports to both preserve level.board's aspect ratio and respect VIEWPORT_MIN_PADDING
 # Returns (root_viewport_rect, main_viewport_rect, palette_rect)
 def get_viewport_rects(screen_width_px, screen_height_px, board_width_tiles, board_height_tiles):
-    width_ratio = (screen_width_px - VIEWPORT_MIN_PADDING * 2) // (board_width_tiles + 4)
+    width_ratio = (screen_width_px - VIEWPORT_MIN_PADDING * 2) // (board_width_tiles + PALETTE_WIDTH + 1)
     height_ratio = (screen_height_px - VIEWPORT_MIN_PADDING * 2) // board_height_tiles
     pixels_per_tile = min(width_ratio, height_ratio)
 
-    root_viewport_width = (board_width_tiles + 4) * pixels_per_tile
+    root_viewport_width = (board_width_tiles + PALETTE_WIDTH + 1) * pixels_per_tile
     root_viewport_height = board_height_tiles * pixels_per_tile
 
     root_viewport_rect = pygame.Rect(
@@ -64,13 +100,20 @@ def get_viewport_rects(screen_width_px, screen_height_px, board_width_tiles, boa
         (root_viewport_width, root_viewport_height)
     )
 
+    # calculate palette tile size (cannot be larger than main's)
+    pixels_per_tile_palette = root_viewport_height // PALETTE_HEIGHT
+    pixels_per_tile_palette = min(pixels_per_tile_palette, pixels_per_tile)
+    
+    palette_viewport_width = pixels_per_tile_palette * PALETTE_WIDTH
+    palette_viewport_height = pixels_per_tile_palette * PALETTE_HEIGHT
+
     palette_viewport_rect = pygame.Rect(
-        (root_viewport_rect.left, root_viewport_rect.top),
-        (3 * pixels_per_tile, root_viewport_height)
+        (root_viewport_rect.left, root_viewport_rect.top + (root_viewport_height - palette_viewport_height) // 2),
+        (palette_viewport_width, palette_viewport_height)
     )
 
     main_viewport_rect = pygame.Rect(
-        (root_viewport_rect.left + 4 * pixels_per_tile, root_viewport_rect.top),
+        (root_viewport_rect.left + pixels_per_tile_palette * PALETTE_WIDTH + pixels_per_tile, root_viewport_rect.top),
         (board_width_tiles * pixels_per_tile, root_viewport_height)
     )
 
@@ -94,6 +137,17 @@ def pixels_to_tiles(x_px, y_px, viewport_rect, board_width_tiles, board_height_t
     return x_tiles, y_tiles
 
 
+# Takes a screen location in pixels and returns the corresponding palette location
+def pixels_to_tiles_palette(x_px, y_px, viewport_rect, palette_width_tiles, palette_height_tiles):
+    x_px -= viewport_rect.left
+    y_px -= viewport_rect.top
+
+    x_tiles = int(float(x_px) / viewport_rect.width * palette_width_tiles)
+    y_tiles = int(float(y_px) / viewport_rect.height * palette_height_tiles)
+
+    return x_tiles, y_tiles
+
+
 # Initializes display, listens for keypress's, and handles window re-size events
 def run_editor(board=None):
     # initialize screen; VIDEORESIZE event is generated immediately
@@ -101,11 +155,18 @@ def run_editor(board=None):
     board_layer_cache = None
 
     if board is None:
-        board = [[[] for _ in range(21)] for _ in range(15)]
+        board = [[[] for _ in range(BOARD_DEFAULT_DIMS[0])] for _ in range(BOARD_DEFAULT_DIMS[1])]
 
     board_width, board_height = len(board[0]), len(board)
 
     selected_entity = None
+
+    # discard selected entity and redraw
+    def discard_selected_item():
+        nonlocal selected_entity
+        if selected_entity:
+            selected_entity = None
+            update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
 
     # main game loop
     clock = pygame.time.Clock()
@@ -129,36 +190,79 @@ def run_editor(board=None):
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    # discard event if click was outside viewport
-                    if not main_viewport_rect.collidepoint(event.pos):
-                        continue
+                    # handle main viewport clicks
+                    if main_viewport_rect.collidepoint(event.pos):
+                        x_tiles, y_tiles = pixels_to_tiles(*event.pos, main_viewport_rect, board_width, board_height)
+                        clicked_tile = board[y_tiles][x_tiles]
+                        if selected_entity is None:
+                            # select an entity and redraw
+                            if len(clicked_tile) > 0:
+                                selected_entity = clicked_tile.pop()   # remove top entity
+                                update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redraw_board=True, selected_entity=selected_entity, cursor_position=event.pos)
 
-                    x_tiles, y_tiles = pixels_to_tiles(*event.pos, main_viewport_rect, board_width, board_height)
+                        else:
+                            # deselect the entity and redraw
+                            clicked_tile.append(selected_entity)
+                            discard_selected_item()
 
-                    # print("CLICK:\t", (x_tiles, y_tiles))
-                    clicked_tile = board[y_tiles][x_tiles]
-                    if selected_entity is None:
-                        # select an entity and redraw
-                        if len(clicked_tile) > 0:
-                            selected_entity = clicked_tile.pop()   # remove top entity
+                    # handle palette viewport clicks
+                    elif palette_viewport_rect.collidepoint(event.pos):
+                        if selected_entity:
+                            selected_entity = None
+                            update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
+                        else:
+                            x_tiles, y_tiles = pixels_to_tiles_palette(*event.pos, palette_viewport_rect, PALETTE_WIDTH, PALETTE_HEIGHT)
+                            choice = PALETTE_LAYOUT[y_tiles][x_tiles]
+                            selected_entity = choice
                             update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redraw_board=True, selected_entity=selected_entity, cursor_position=event.pos)
-
+                    
+                    # handle background clicks (i.e. no viewports)
                     else:
-                        # deselect the entity and redraw
-                        clicked_tile.append(selected_entity)
-                        selected_entity = None
-                        update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
+                        discard_selected_item()
+
+                elif event.button == 3:
+                    discard_selected_item()
             
             elif event.type == pygame.MOUSEMOTION:
                 if selected_entity:
-                    if main_viewport_rect.collidepoint(event.pos):
+                    if root_viewport_rect.collidepoint(event.pos):
                         update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redraw_board=False, selected_entity=selected_entity, cursor_position=event.pos)
 
             elif event.type == pygame.KEYDOWN:
+                board_size_changed = False
                 if event.key == pygame.K_s:
                     write_level_start("test_output.lvl", board)
                     print("level saved!")
+                # handle board size changes
+                elif event.key == pygame.K_UP:
+                    if board_height < BOARD_HEIGHT_RANGE[1]:
+                        board_height += 1
+                        board.insert(0, [[]] * board_width)
+                        board_size_changed = True
+                elif event.key == pygame.K_DOWN:
+                    if board_height > BOARD_HEIGHT_RANGE[0]:
+                        board_height -= 1
+                        board.pop(0)
+                        board_size_changed = True
+                elif event.key == pygame.K_RIGHT:
+                    if board_width < BOARD_WIDTH_RANGE[1]:
+                        board_width += 1
+                        for row in board:
+                            row.append([])
+                        board_size_changed = True
+                elif event.key == pygame.K_LEFT:
+                    if board_width > BOARD_WIDTH_RANGE[0]:
+                        board_width -= 1
+                        for row in board:
+                            row.pop()
+                        board_size_changed = True
+                
+                if board_size_changed:
+                    root_viewport_rect, main_viewport_rect, palette_viewport_rect =\
+                    get_viewport_rects(new_screen_width, new_screen_height, board_width, board_height)
+                    update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
         
 
 if __name__ == "__main__":
-    run_editor(level_starts[0])
+    run_editor()
+    # run_editor(level_starts[0])

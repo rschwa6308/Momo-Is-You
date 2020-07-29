@@ -42,7 +42,7 @@ def update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redr
     if selected_entity and cursor_position:
         board_width, board_height = len(board[0]), len(board)
         tile_size_px = min(main_viewport_rect.width // board_width, main_viewport_rect.height // board_height)
-        img = get_entity_image(selected_entity, tile_size_px, VIEWPORT_BACKGROUND_COLOR)
+        img = get_entity_image(selected_entity, tile_size_px)
         draw_pos = (cursor_position[0] - tile_size_px // 2, cursor_position[1] - tile_size_px // 2)
         screen.blit(img, draw_pos)
 

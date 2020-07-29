@@ -175,9 +175,9 @@ def draw_text_card_onto_tile(tile, color):
     pygame.draw.circle(tile, color, (tile_size_px - corner_radius, tile_size_px - corner_radius), corner_radius)
 
 
-# Returns surface of size (tile_size_px, tile_size_px); cached for performance
+# Returns surface of size (tile_size_px, tile_size_px) for the given entity; cached for performance
 @lru_cache(maxsize=len(entity_map) * 2)  # for good measure
-def get_entity_image(entity, tile_size_px, bg_color):
+def get_entity_image(entity, tile_size_px):
     if entity_map[entity]["src_image_id"] is not None:
         # get scaled texture
         src_image = src_images[entity_map[entity]["src_image_id"]]
@@ -197,9 +197,11 @@ def get_entity_image(entity, tile_size_px, bg_color):
 
             if isinstance(entity, Adjectives):
                 draw_text_card_onto_tile(img, entity_map[entity]["text_color"])
-                text_color = bg_color
+                text_color = (0, 0, 0, 255)
+                blend_mode = pygame.BLEND_RGBA_SUB
             else:
                 text_color = entity_map[entity]["text_color"]
+                blend_mode = pygame.BLEND_RGBA_MAX
 
             text_images = [font.render(substr, True, text_color) for substr in text_substrings]
             locations = text_locations[len(text_images)]
@@ -208,7 +210,7 @@ def get_entity_image(entity, tile_size_px, bg_color):
                     tile_size_px * loc[0] - text_img.get_width() // 2,
                     tile_size_px * loc[1] - text_img.get_height() // 2
                 )
-                img.blit(text_img, dest)
+                img.blit(text_img, dest, special_flags=blend_mode)
         else:
             img.fill(entity_map[entity]["color"])
         return img
@@ -228,7 +230,7 @@ def draw_board_onto_viewport(viewport, board, bg_color, grid_color=None):
             tile_contents = board[y][x]
             tile_contents.sort(key=lambda e: entity_map[e]["draw_precedence"])
             for entity in tile_contents:
-                img = get_entity_image(entity, tile_size_px, bg_color)
+                img = get_entity_image(entity, tile_size_px)
                 loc_px = (tile_size_px * x, tile_size_px * y)
                 viewport.blit(img, loc_px)
 

@@ -52,7 +52,7 @@ BOARD_WIDTH_RANGE = (5, 35)
 BOARD_HEIGHT_RANGE = (5, 25)
 
 # Size of the default empty board
-BOARD_DEFAULT_DIMS = (21, 15)
+BOARD_DEFAULT_DIMS = (15, 12)
 
 
 # Draw the level onto a fresh viewport surface, render UI elements, blit them to the screen, and flip the display
@@ -237,7 +237,7 @@ def run_editor(board=None):
                 elif event.key == pygame.K_UP:
                     if board_height < BOARD_HEIGHT_RANGE[1]:
                         board_height += 1
-                        board.insert(0, [[]] * board_width)
+                        board.insert(0, [[] for _ in range(board_width)])
                         board_size_changed = True
                 elif event.key == pygame.K_DOWN:
                     if board_height > BOARD_HEIGHT_RANGE[0]:

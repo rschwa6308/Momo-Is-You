@@ -106,5 +106,5 @@ def play_level(level):
 
 
 if __name__ == "__main__":
-    test_level = Level(level_starts[0])
+    test_level = Level(level_starts[1])
     play_level(test_level)

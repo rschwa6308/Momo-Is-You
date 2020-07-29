@@ -91,7 +91,7 @@ def write_level_start(filename, board):
 
 
 # --- Load All Levels --- #
-level_names = ["level_1"]
+level_names = ["level_1", "level_2"]
 level_starts = [
     read_level_start(f"{level_name}.lvl")
     for level_name in level_names

@@ -18,7 +18,8 @@ SCREEN_BACKGROUND_COLOR = (25, 25, 32)
 VIEWPORT_BACKGROUND_COLOR = (15, 15, 15)
 
 TARGET_FPS = 60
-INPUT_REPEAT_BUFFER_MS = 120  # time between registered inputs when key is held
+INPUT_REPEAT_BUFFER_MS = 500   # time the key must be held for before repeat inputs are registered
+INPUT_REPEAT_PERIOD_MS = 100   # time between registered inputs when key is held
 
 key_map = {
     pygame.K_UP: Level.UP,
@@ -68,6 +69,15 @@ def play_level(level):
     # initialize keypress vars
     currently_pressed = None
     last_input_timestamp = 0  # ms
+    repeating_inputs = False
+
+    # store the input timestamp, send the input to the level, update the screen
+    def process_keypress(key):
+        nonlocal last_input_timestamp
+        last_input_timestamp = pygame.time.get_ticks()
+        # only update the screen when the board state changes
+        if level.process_input(key_map[key]):
+            update_screen(screen, level, viewport_rect)
 
     # main game loop
     clock = pygame.time.Clock()
@@ -80,10 +90,12 @@ def play_level(level):
                 level_alive = False
             elif event.type == pygame.KEYDOWN:
                 if event.key in key_map.keys():
+                    process_keypress(event.key)
                     currently_pressed = event.key
             elif event.type == pygame.KEYUP:
                 if event.key == currently_pressed:
                     currently_pressed = None
+                    repeating_inputs = False
             elif event.type == pygame.VIDEORESIZE:
                 new_screen_width = max(event.w, MIN_SCREEN_WIDTH)
                 new_screen_height = max(event.h, MIN_SCREEN_HEIGHT)
@@ -94,10 +106,12 @@ def play_level(level):
 
         if currently_pressed is not None:
             current_timestamp = pygame.time.get_ticks()
+
             if current_timestamp - last_input_timestamp > INPUT_REPEAT_BUFFER_MS:
-                last_input_timestamp = current_timestamp
-                level.process_input(key_map[currently_pressed])
-                update_screen(screen, level, viewport_rect)  # TODO: only call this when needed
+                repeating_inputs = True
+
+            if repeating_inputs and current_timestamp - last_input_timestamp > INPUT_REPEAT_PERIOD_MS:
+                process_keypress(event.key)
 
         if level.has_won:
             print("\nCongrats! You beat the level!")

@@ -43,6 +43,7 @@ class Level:
         self.has_won = False
 
     # Primary API method; handles all processing for a given input key
+    # Returns true iff board state is changed
     def process_input(self, key):
         print("\nprocess_input(%s)" % key)
 
@@ -61,16 +62,19 @@ class Level:
             self.board_history.append(board_copy(self.board))  # add copy of current board state to history
 
             if key in (Level.UP, Level.DOWN, Level.LEFT, Level.RIGHT):
-                if self.handle_motion(key):
+                if self.handle_motion(key):     # always handle motion
                     board_state_changed = True
 
-            if self.apply_proactive_rules():
+            if self.apply_proactive_rules():    # always apply proactive rules
                 board_state_changed = True
 
-            if board_state_changed:  # only re-parse when board state has been changed
+            if board_state_changed:             # only re-parse when board state has been changed
                 self.parse_rules_from_board()
 
-            self.apply_reactive_rules()
+            if self.apply_reactive_rules():     # always apply reactive rules
+                board_state_changed = True
+        
+        return board_state_changed
 
     def get_tile_at(self, x, y):
         return self.board[y][x]

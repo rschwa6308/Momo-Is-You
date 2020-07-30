@@ -91,7 +91,7 @@ def write_level(filename, board):
 
 
 # --- Load All Levels --- #
-filenames = ["level_1.lvl", "level_2.lvl"]
+filenames = ["level_1.lvl", "level_2.lvl", "test.lvl"]
 levels = [
     read_level(os.path.join(LEVELS_DIR, filename))
     for filename in filenames

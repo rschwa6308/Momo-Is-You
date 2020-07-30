@@ -1,6 +1,18 @@
 # Game Engine
 
+import itertools
+
 from entities import *
+
+
+# Valid rule patterns
+RULE_PATTERNS = [
+    [Nouns, Verbs.IS, Complements],
+    [Nouns, Verbs.HAS, Nouns]
+]
+
+# The maximum parsed length of a valid rule pattern
+MAX_RULE_LENGTH = max(len(rule) for rule in RULE_PATTERNS)
 
 
 # --- Primary Engine Class; handles all game logic --- #
@@ -13,12 +25,6 @@ class Level:
     WAIT = "wait"
     UNDO = "undo"
     RESTART = "restart"
-
-    # valid rule patterns
-    rule_patterns = [
-        [Nouns, Verbs.IS, Complements],
-        [Nouns, Verbs.HAS, Nouns]
-    ]
 
     def __init__(self, board, logging=True):
         if len(board) == 0 or len(board[0]) == 0:
@@ -55,11 +61,13 @@ class Level:
             if len(self.board_history) > 0:
                 self.board = self.board_history.pop()
                 self.parse_rules_from_board()
+                board_state_changed = True
         elif key == Level.RESTART:
             if len(self.board_history) > 0:
                 self.board = self.board_history[0]
                 self.board_history.clear()
                 self.parse_rules_from_board()
+                board_state_changed = True
         else:
             self.board_history.append(board_copy(self.board))  # add copy of current board state to history
 
@@ -201,25 +209,30 @@ class Level:
         self.rules_dict.clear()
         self.add_implicit_rules()
 
+        candidate_sequences = []    # set of tuples of tiles representing all contiguous orthogonal text sequences
+
         # horizontal scan
-        for x in range(self.width - 2):
+        for x in range(self.width - MAX_RULE_LENGTH + 1):
             for y in range(self.height):
-                tiles = [self.get_tile_at(x + offset, y) for offset in range(3)]
-                filtered_tiles = [list(filter(lambda e: isinstance(e, Text), tile)) for tile in tiles]
-                if all(len(tile) > 0 for tile in filtered_tiles):
-                    texts = [tile[0] for tile in filtered_tiles]  # only examine first Text instance found
-                    if any(matches_pattern(pattern, texts) for pattern in self.rule_patterns):
-                        self.add_rule(get_object_from_noun(texts[0]), texts[1], texts[2])
+                tiles = [self.get_tile_at(x + offset, y) for offset in range(MAX_RULE_LENGTH)]
+                filtered_tiles = tuple(list(filter(lambda e: isinstance(e, Text), tile)) for tile in tiles)
+                if all(tile for tile in filtered_tiles):
+                    candidate_sequences.append(filtered_tiles)
 
         # vertical scan
         for x in range(self.width):
-            for y in range(self.height - 2):
-                tiles = [self.get_tile_at(x, y + offset) for offset in range(3)]
-                filtered_tiles = [list(filter(lambda e: isinstance(e, Text), tile)) for tile in tiles]
-                if all(len(tile) > 0 for tile in filtered_tiles):
-                    texts = [tile[0] for tile in filtered_tiles]  # only examine first Text instance found
-                    if any(matches_pattern(pattern, texts) for pattern in self.rule_patterns):
-                        self.add_rule(get_object_from_noun(texts[0]), texts[1], texts[2])
+            for y in range(self.height - MAX_RULE_LENGTH + 1):
+                tiles = [self.get_tile_at(x, y + offset) for offset in range(MAX_RULE_LENGTH)]
+                filtered_tiles = tuple(list(filter(lambda e: isinstance(e, Text), tile)) for tile in tiles)
+                if all(tile for tile in filtered_tiles):
+                    candidate_sequences.append(filtered_tiles)
+        
+        # loop over all candidate sequences
+        for sequence in candidate_sequences:
+            # loop over all possible interpretations of sequence (cartesian product)
+            for texts in itertools.product(*sequence):
+                if any(matches_pattern(pattern, texts) for pattern in RULE_PATTERNS):
+                    self.add_rule(get_object_from_noun(texts[0]), texts[1], texts[2])
 
         if self.logging: print("\t\trules_dict:", self.rules_dict)
 
@@ -270,8 +283,8 @@ class Level:
 
         has = self.get_rule(entity, Verbs.HAS)
         if has is not None:
-            for spawn_entity in has:
-                tile.append(spawn_entity)
+            for noun in has:
+                tile.append(get_object_from_noun(noun))
 
 
 # --- Helper Functions --- #

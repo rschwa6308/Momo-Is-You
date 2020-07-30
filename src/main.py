@@ -121,5 +121,5 @@ def play_level(level):
 
 if __name__ == "__main__":
     # load a test level (with logging disabled)
-    test_level = Level(levels[1], logging=False)
+    test_level = Level(levels[0], logging=False)
     play_level(test_level)

@@ -20,7 +20,7 @@ class Level:
         [Nouns, Verbs.HAS, Nouns]
     ]
 
-    def __init__(self, board):
+    def __init__(self, board, logging=True):
         if len(board) == 0 or len(board[0]) == 0:
             raise ValueError("Invalid board shape; board cannot be empty.")
 
@@ -34,6 +34,8 @@ class Level:
         self.height = len(board)
         self.width = len(board[0])
 
+        self.logging = logging     # logging enabled by default
+
         self.rules_dict = {}
         self.implicit_rules = [(Text, Verbs.IS, Adjectives.PUSH)]
         self.parse_rules_from_board()
@@ -45,7 +47,7 @@ class Level:
     # Primary API method; handles all processing for a given input key
     # Returns true iff board state is changed
     def process_input(self, key):
-        print("\nprocess_input(%s)" % key)
+        if self.logging: print("\nprocess_input(%s)" % key)
 
         board_state_changed = False
 
@@ -81,7 +83,7 @@ class Level:
 
     # Handles all level motion (assumes that self.rules_dict is constant); returns true iff board state is changed
     def handle_motion(self, direction_key):
-        print("\thandle_motion(%s)" % direction_key)
+        if self.logging: print("\thandle_motion(%s)" % direction_key)
 
         yous = []
         for y in range(self.height):
@@ -91,7 +93,7 @@ class Level:
                         yous.append((entity, (x, y)))
 
         if len(yous) == 0:
-            print("\t\tyou are nothing!!!")
+            if self.logging: print("\t\tyou are nothing!!!")
             return False
 
         displacement_vector = {
@@ -194,7 +196,7 @@ class Level:
     # Scans the board for valid text patterns and calls add_rule() on all matches
     # TODO: research how Baba handles case of overlapping text
     def parse_rules_from_board(self):
-        print("\tparse_rules_from_board()")
+        if self.logging: print("\tparse_rules_from_board()")
 
         self.rules_dict.clear()
         self.add_implicit_rules()
@@ -219,16 +221,16 @@ class Level:
                     if any(matches_pattern(pattern, texts) for pattern in self.rule_patterns):
                         self.add_rule(get_object_from_noun(texts[0]), texts[1], texts[2])
 
-        print("\t\trules_dict:", self.rules_dict)
+        if self.logging: print("\t\trules_dict:", self.rules_dict)
 
     # Applies all 'proactive' rules (i.e MOVE, MAKE(?)); returns true iff board state is changed
     def apply_proactive_rules(self):
-        print("\tapply_proactive_rules()")
+        if self.logging: print("\tapply_proactive_rules()")
         return False  # TODO
 
     # Applies all 'reactive' rules (i.e. WIN, SINK, DEFEAT, Noun IS Noun); returns true iff board state is changed
     def apply_reactive_rules(self):
-        print("\tapply_reactive_rules()")
+        if self.logging: print("\tapply_reactive_rules()")
 
         board_state_changed = False
         for x in range(self.width):

@@ -29,8 +29,8 @@ entity_map = {
         "draw_precedence": 1
     },
     Objects.WATER: {
-        "color": (0, 0, 255),  # TEMPORARY
-        "src_image_id": None,
+        "color": None,
+        "src_image_id": "water_src",
         "draw_precedence": 1
     },
 

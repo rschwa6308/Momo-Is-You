@@ -10,6 +10,8 @@ The theme is based on the beloved television series *Avatar: The Last Airbender*
 
 ![test level screenshot](https://github.com/rschwa6308/Momo-Is-You/blob/master/screenshots/test_level_screenshot.png)
 
+![level editor screenshot](https://github.com/rschwa6308/Momo-Is-You/blob/master/screenshots/level_editor_screenshot.png)
+
 ### Current Features
  - 3 playable levels
  - dynamic window-resizing

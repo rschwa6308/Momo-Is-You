@@ -79,7 +79,6 @@ def update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redr
     screen.blit(board_layer, main_viewport_rect)
 
     palette_layer = pygame.Surface((palette_viewport_rect.width, palette_viewport_rect.height))
-    # palette_layer.fill(VIEWPORT_BACKGROUND_COLOR)
     draw_board_onto_viewport(palette_layer, PALETTE_BOARD, VIEWPORT_BACKGROUND_COLOR)
 
     screen.blit(palette_layer, palette_viewport_rect)
@@ -175,6 +174,8 @@ def run_editor(board=None):
 
     pressed_keys = set()
 
+    board_save_state = board_copy(board)
+
     test_play_process = None
 
     # discard selected entity and update screen
@@ -196,7 +197,11 @@ def run_editor(board=None):
     
     # update window caption based off level_filename
     def refresh_caption():
-        pygame.display.set_caption(level_filename if level_filename else "~ Unsaved Level ~")
+        if level_filename:
+            caption = level_filename
+        else:
+            caption = "~ Unsaved Level ~"
+        pygame.display.set_caption(caption)
 
     refresh_caption()
 
@@ -209,7 +214,8 @@ def run_editor(board=None):
         # process input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                if level_filename is None and any(any(row) for row in board):
+                if board_save_state != board:
+                    # if board_save_state is None or any(any(row) for row in board):
                     if not ask_yes_no("Level Editor", "You have unsaved work. Are you sure you want to quit?"):
                         continue
                 editor_alive = False
@@ -291,9 +297,13 @@ def run_editor(board=None):
                 if pygame.K_LCTRL in pressed_keys or pygame.K_RCTRL in pressed_keys:
                     if event.key == pygame.K_o:
                         # Open
+                        if board_save_state != board:
+                            if not ask_yes_no("Level Editor", "You have unsaved work that will be overwitten by opening another level. Are you sure you want to continue?"):
+                                continue
                         if res := ask_open_filename(**FILE_DIALOG_OPTIONS):
                             level_filename = res
                             board = read_level(level_filename)
+                            board_save_state = board_copy(board)
                             refresh_layout()
                             refresh_caption()
                             print(f"opened {level_filename}")
@@ -304,6 +314,7 @@ def run_editor(board=None):
                             if res := ask_save_as_filename(**FILE_DIALOG_OPTIONS):
                                 level_filename = res
                                 write_level(level_filename, board)
+                                board_save_state = board_copy(board)
                                 refresh_caption()
                                 print(f"saved to {level_filename}")
                         else:
@@ -311,9 +322,10 @@ def run_editor(board=None):
                             if level_filename is None:
                                 if res := ask_save_as_filename(**FILE_DIALOG_OPTIONS):
                                     level_filename = res
-                                    refresh_caption()
                             if level_filename:
                                 write_level(level_filename, board)
+                                board_save_state = board_copy(board)
+                                refresh_caption()
                                 print(f"saved to {level_filename}")
                 
                 elif event.key == pygame.K_SPACE:

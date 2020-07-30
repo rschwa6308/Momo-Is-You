@@ -3,6 +3,9 @@
 from functools import lru_cache
 import pygame
 
+import tkinter as tk
+from tkinter import filedialog, messagebox
+
 from entities import *
 from assets import src_images
 
@@ -255,3 +258,24 @@ def draw_board_onto_viewport(viewport, board, bg_color, grid_color=None):
             pygame.draw.line(grid_surface, grid_color, (x_px, 0), (x_px, viewport_height), line_width)
 
         viewport.blit(grid_surface, (0, 0))
+
+
+# Tkinter file dialog wrappers
+# https://docs.python.org/3.9/library/dialog.html#native-load-save-dialogs
+
+def ask_open_filename(**options):
+    root = tk.Tk()
+    root.withdraw()
+    return filedialog.askopenfilename(**options)
+
+
+def ask_save_as_filename(**options):
+    root = tk.Tk()
+    root.withdraw()
+    return filedialog.asksaveasfilename(**options)
+
+
+def ask_yes_no(title, message):
+    root = tk.Tk()
+    root.withdraw()
+    return messagebox.askyesno(title, message)

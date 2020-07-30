@@ -45,15 +45,15 @@ LEVELS_DIR = os.path.join(os.path.dirname(__file__), "levels")
 SAVED_LEVELS_DIR = os.path.join(LEVELS_DIR, "saved")
 
 
-# Read a level-start from a given filename
-def read_level_start(filename):
-    level_start = []
-    abs_filename = os.path.join(LEVELS_DIR, filename)
+# Read a level from a given filename
+def read_level(filename):
+    level = []
+    # abs_filename = filename #os.path.join(LEVELS_DIR, filename)
 
-    if not os.path.isfile(abs_filename):
+    if not os.path.isfile(filename):
         raise FileNotFoundError(f"Given filename '{filename}' does not exist.")
 
-    with open(abs_filename) as file:
+    with open(filename) as file:
         for line in file.readlines():
             row = []
             for tile in line.rstrip().split(TILE_DELIMITER):
@@ -62,13 +62,13 @@ def read_level_start(filename):
                 else:
                     keystrs = tile.split(KEYSTR_DELIMITER)
                     row.append([KEYSTR_ENTITY_MAP[keystr] for keystr in keystrs])
-            level_start.append(row)
+            level.append(row)
 
-    return level_start
+    return level
 
 
 # Write a given level-start to a given filename
-def write_level_start(filename, board):
+def write_level(filename, board):
     if not filename.endswith(".lvl"):
         raise ValueError(f"Given filename '{filename}' is invalid. Filenames must end with '.lvl'.")
 
@@ -85,16 +85,16 @@ def write_level_start(filename, board):
 
     out = "\n".join(row_strs)
 
-    abs_filename = os.path.join(SAVED_LEVELS_DIR, filename)
-    with open(abs_filename, mode='w') as f:
+    # abs_filename = os.path.join(SAVED_LEVELS_DIR, filename)
+    with open(filename, mode='w') as f:
         f.write(out)
 
 
 # --- Load All Levels --- #
-level_names = ["level_1", "level_2"]
-level_starts = [
-    read_level_start(f"{level_name}.lvl")
-    for level_name in level_names
+filenames = ["level_1.lvl", "level_2.lvl"]
+levels = [
+    read_level(os.path.join(LEVELS_DIR, filename))
+    for filename in filenames
 ]
 
 

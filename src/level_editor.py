@@ -5,7 +5,7 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 
 from ui_helpers import *
-from levels import level_starts, write_level_start
+from levels import levels, read_level, write_level, LEVELS_DIR
 # from entities import *
 
 
@@ -20,6 +20,12 @@ VIEWPORT_BACKGROUND_COLOR = (15, 15, 15)
 GRID_COLOR = (0, 80, 90, 127)
 
 TARGET_FPS = 60
+
+FILE_DIALOG_OPTIONS = {         # https://docs.python.org/3.9/library/dialog.html#native-load-save-dialogs
+    "initialdir": LEVELS_DIR,
+    "filetypes": [("Level Files", ".lvl")],
+    "defaultextension": ".lvl"
+}
 
 
 # --- Level-Related Constants --- #
@@ -150,6 +156,11 @@ def pixels_to_tiles_palette(x_px, y_px, viewport_rect, palette_width_tiles, pale
 
 # Initializes display, listens for keypress's, and handles window re-size events
 def run_editor(board=None):
+    level_filename = None
+
+    board_width, board_height = None, None
+    root_viewport_rect, main_viewport_rect, palette_viewport_rect = None, None, None
+
     # initialize screen; VIDEORESIZE event is generated immediately
     screen = get_initialized_screen(STARTING_SCREEN_WIDTH, STARTING_SCREEN_HEIGHT)
     board_layer_cache = None
@@ -157,16 +168,32 @@ def run_editor(board=None):
     if board is None:
         board = [[[] for _ in range(BOARD_DEFAULT_DIMS[0])] for _ in range(BOARD_DEFAULT_DIMS[1])]
 
-    board_width, board_height = len(board[0]), len(board)
-
     selected_entity = None
 
-    # discard selected entity and redraw
+    pressed_keys = set()
+
+    # discard selected entity and update screen
     def discard_selected_item():
         nonlocal selected_entity
         if selected_entity:
             selected_entity = None
             update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
+    
+    # recalculate board dimensions, recalculate viewports, and update screen
+    def refresh_layout():
+        nonlocal board_width, board_height
+        board_width, board_height = len(board[0]), len(board)
+
+        nonlocal root_viewport_rect, main_viewport_rect, palette_viewport_rect
+        root_viewport_rect, main_viewport_rect, palette_viewport_rect =\
+            get_viewport_rects(new_screen_width, new_screen_height, board_width, board_height)
+        update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
+    
+    # update window caption based off level_filename
+    def refresh_caption():
+        pygame.display.set_caption(level_filename if level_filename else "~ Unsaved Level ~")
+
+    refresh_caption()
 
     # main game loop
     clock = pygame.time.Clock()
@@ -177,16 +204,16 @@ def run_editor(board=None):
         # process input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                if level_filename is None and any(any(row) for row in board):
+                    if not ask_yes_no("Level Editor", "You have unsaved work. Are you sure you want to quit?"):
+                        continue
                 editor_alive = False
             
             elif event.type == pygame.VIDEORESIZE:
                 new_screen_width = max(event.w, MIN_SCREEN_WIDTH)
                 new_screen_height = max(event.h, MIN_SCREEN_HEIGHT)
                 screen = get_initialized_screen(new_screen_width, new_screen_height)
-                pygame.display.update()
-                root_viewport_rect, main_viewport_rect, palette_viewport_rect =\
-                    get_viewport_rects(new_screen_width, new_screen_height, board_width, board_height)
-                update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
+                refresh_layout()
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -229,40 +256,76 @@ def run_editor(board=None):
                         update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redraw_board=False, selected_entity=selected_entity, cursor_position=event.pos)
 
             elif event.type == pygame.KEYDOWN:
-                board_size_changed = False
-                if event.key == pygame.K_s:
-                    write_level_start("test_output.lvl", board)
-                    print("level saved!")
+                pressed_keys.add(event.key)
+
                 # handle board size changes
-                elif event.key == pygame.K_UP:
+                board_size_changed = False
+                if event.key == pygame.K_UP:
                     if board_height < BOARD_HEIGHT_RANGE[1]:
-                        board_height += 1
                         board.insert(0, [[] for _ in range(board_width)])
                         board_size_changed = True
                 elif event.key == pygame.K_DOWN:
                     if board_height > BOARD_HEIGHT_RANGE[0]:
-                        board_height -= 1
                         board.pop(0)
                         board_size_changed = True
                 elif event.key == pygame.K_RIGHT:
                     if board_width < BOARD_WIDTH_RANGE[1]:
-                        board_width += 1
                         for row in board:
                             row.append([])
                         board_size_changed = True
                 elif event.key == pygame.K_LEFT:
                     if board_width > BOARD_WIDTH_RANGE[0]:
-                        board_width -= 1
                         for row in board:
                             row.pop()
                         board_size_changed = True
                 
                 if board_size_changed:
-                    root_viewport_rect, main_viewport_rect, palette_viewport_rect =\
-                    get_viewport_rects(new_screen_width, new_screen_height, board_width, board_height)
-                    update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
-        
+                    refresh_layout()
+                
+                # handle keyboard shortcuts
+                if pygame.K_LCTRL in pressed_keys or pygame.K_RCTRL in pressed_keys:
+                    if event.key == pygame.K_o:
+                        # Open
+                        level_filename = ask_open_filename(**FILE_DIALOG_OPTIONS)
+                        board = read_level(level_filename)
+                        refresh_layout()
+                        refresh_caption()
+                        print(f"opened {level_filename}")
+
+                    elif event.key == pygame.K_s:
+                        if pygame.K_LSHIFT in pressed_keys or pygame.K_RSHIFT in pressed_keys:
+                            # Save as
+                            if res := ask_save_as_filename(**FILE_DIALOG_OPTIONS):
+                                level_filename = res
+                            if level_filename:
+                                write_level(level_filename, board)
+                                refresh_caption()
+                                print(f"saved to {level_filename}")
+                        else:
+                            # Save
+                            if level_filename is None:
+                                if res := ask_save_as_filename(**FILE_DIALOG_OPTIONS):
+                                    level_filename = res
+                                    refresh_caption()
+                            if level_filename:
+                                write_level(level_filename, board)
+                                print(f"saved to {level_filename}")
+            
+            elif event.type == pygame.KEYUP:
+                if event.key in (pygame.K_LCTRL, pygame.K_RCTRL):
+                    ctrl_pressed = False
+
+
+USAGE_TEXT = """\
++---------- SHORTCUTS ----------+
+|  Open:      CTRL + O          |
+|  Save:      CTRL + S          |
+|  Save as:   CTRL + SHIFT + S  |
++-------------------------------+\
+"""
+
 
 if __name__ == "__main__":
+    print(USAGE_TEXT)
     run_editor()
-    # run_editor(level_starts[0])
+    # run_editor(levels[0])

@@ -5,7 +5,7 @@ import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"   # grrr
 
 from engine import Level
-from levels import level_starts
+from levels import levels
 from ui_helpers import *
 
 # --- UI-Related Constants --- #
@@ -121,5 +121,5 @@ def play_level(level):
 
 if __name__ == "__main__":
     # load a test level (with logging disabled)
-    test_level = Level(level_starts[1], logging=False)
+    test_level = Level(levels[1], logging=False)
     play_level(test_level)

@@ -4,9 +4,12 @@ import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 
+from multiprocessing import Process
+
 from ui_helpers import *
 from levels import levels, read_level, write_level, LEVELS_DIR
-# from entities import *
+from main import play_level
+from engine import Level, board_copy
 
 
 # --- UI-Related Constants --- #
@@ -172,6 +175,8 @@ def run_editor(board=None):
 
     pressed_keys = set()
 
+    test_play_process = None
+
     # discard selected entity and update screen
     def discard_selected_item():
         nonlocal selected_entity
@@ -286,18 +291,18 @@ def run_editor(board=None):
                 if pygame.K_LCTRL in pressed_keys or pygame.K_RCTRL in pressed_keys:
                     if event.key == pygame.K_o:
                         # Open
-                        level_filename = ask_open_filename(**FILE_DIALOG_OPTIONS)
-                        board = read_level(level_filename)
-                        refresh_layout()
-                        refresh_caption()
-                        print(f"opened {level_filename}")
+                        if res := ask_open_filename(**FILE_DIALOG_OPTIONS):
+                            level_filename = res
+                            board = read_level(level_filename)
+                            refresh_layout()
+                            refresh_caption()
+                            print(f"opened {level_filename}")
 
                     elif event.key == pygame.K_s:
                         if pygame.K_LSHIFT in pressed_keys or pygame.K_RSHIFT in pressed_keys:
                             # Save as
                             if res := ask_save_as_filename(**FILE_DIALOG_OPTIONS):
                                 level_filename = res
-                            if level_filename:
                                 write_level(level_filename, board)
                                 refresh_caption()
                                 print(f"saved to {level_filename}")
@@ -310,10 +315,16 @@ def run_editor(board=None):
                             if level_filename:
                                 write_level(level_filename, board)
                                 print(f"saved to {level_filename}")
+                
+                elif event.key == pygame.K_SPACE:
+                    # spawn a new process running play_level (can only have one alive at a time)
+                    if test_play_process is None or not test_play_process.is_alive():
+                        test_play_process = Process(target=play_level, args=(Level(board_copy(board), logging=False),))
+                        test_play_process.start()
             
             elif event.type == pygame.KEYUP:
-                if event.key in (pygame.K_LCTRL, pygame.K_RCTRL):
-                    ctrl_pressed = False
+                if event.key in pressed_keys:
+                    pressed_keys.remove(event.key)
 
 
 USAGE_TEXT = """\
@@ -321,6 +332,7 @@ USAGE_TEXT = """\
 |  Open:      CTRL + O          |
 |  Save:      CTRL + S          |
 |  Save as:   CTRL + SHIFT + S  |
+|  Test play: SPACE             |
 +-------------------------------+\
 """
 

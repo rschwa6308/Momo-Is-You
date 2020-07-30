@@ -8,8 +8,10 @@ Implementing the dynamic rule system presents a unique programming challenge. Th
 
 The theme is based on the beloved television series *Avatar: The Last Airbender*, and features a number of characters from the show including Momo and Appa. Conveniently, many of the characters have four-letter names (Aang, Toph, Zuko, Iroh, Ozai, ...) which easily fit onto the game's tiles.
 
+**Example Level:**
 ![test level screenshot](https://github.com/rschwa6308/Momo-Is-You/blob/master/screenshots/test_level_screenshot.png)
 
+**Level Editor:**
 ![level editor screenshot](https://github.com/rschwa6308/Momo-Is-You/blob/master/screenshots/level_editor_screenshot.png)
 
 ### Current Features

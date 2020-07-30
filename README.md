@@ -20,18 +20,25 @@ The theme is based on the beloved television series *Avatar: The Last Airbender*
  - undo/restart
  - a functioning level editor
  - numerous supported game mechanics
-   - WIN
-   - MOVE
-   - STOP
-   - PUSH
-   - DEFEAT
-   - SINK
-   - HAS
+   - `WIN`
+   - `MOVE`
+   - `STOP`
+   - `PUSH`
+   - `DEFEAT`
+   - `SINK`
+   - `HAS`
 
 ### TODO
  - menu and level-select screens
+ - more levels
  - more game mechanics
-   - HOT/MELT
-   - SHUT/OPEN
-   - MOVE
-   - MAKE
+   - `FLY` (and `APPA`)
+   - `SHUT`/`OPEN`
+   - `HOT`/`MELT`
+   - `MOVE`
+   - `MAKE`
+   - `AND` and `NOT`
+   - `ON`
+   - text conflicts (red strikethrough)
+ - rename `ROCK` to `EARTH`, add a `FIRE` object, and make `AIR` correspond to empty tiles
+ - context-aware tilable sprites (e.g. `WALL` and `WATER`)

@@ -339,13 +339,14 @@ def run_editor(board=None):
                     pressed_keys.remove(event.key)
 
 
-USAGE_TEXT = """\
-+---------- SHORTCUTS ----------+
-|  Open:      CTRL + O          |
-|  Save:      CTRL + S          |
-|  Save as:   CTRL + SHIFT + S  |
-|  Playtest:  SPACE             |
-+-------------------------------+\
+USAGE_TEXT = """
+    +----------- SHORTCUTS -----------+
+    |  Open:        CTRL + O          |
+    |  Save:        CTRL + S          |
+    |  Save as:     CTRL + SHIFT + S  |
+    |  Playtest:    SPACE             |
+    |  Change size: ARROW KEYS        |
+    +---------------------------------+\
 """
 
 

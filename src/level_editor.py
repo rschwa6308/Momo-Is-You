@@ -176,7 +176,7 @@ def run_editor(board=None):
 
     board_save_state = board_copy(board)
 
-    test_play_process = None
+    playtest_process = None
 
     # discard selected entity and update screen
     def discard_selected_item():
@@ -330,9 +330,9 @@ def run_editor(board=None):
                 
                 elif event.key == pygame.K_SPACE:
                     # spawn a new process running play_level (can only have one alive at a time)
-                    if test_play_process is None or not test_play_process.is_alive():
-                        test_play_process = Process(target=play_level, args=(Level(board_copy(board), logging=False),))
-                        test_play_process.start()
+                    if playtest_process is None or not playtest_process.is_alive():
+                        playtest_process = Process(target=play_level, args=(Level(board_copy(board), logging=False),))
+                        playtest_process.start()
             
             elif event.type == pygame.KEYUP:
                 if event.key in pressed_keys:
@@ -344,7 +344,7 @@ USAGE_TEXT = """\
 |  Open:      CTRL + O          |
 |  Save:      CTRL + S          |
 |  Save as:   CTRL + SHIFT + S  |
-|  Test play: SPACE             |
+|  Playtest:  SPACE             |
 +-------------------------------+\
 """
 

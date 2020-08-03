@@ -172,18 +172,24 @@ def run_editor(board=None):
 
     selected_entity = None
 
-    pressed_keys = set()
+    key_mods = pygame.key.get_mods()
 
     board_save_state = board_copy(board)
 
     playtest_process = None
 
-    # discard selected entity and update screen
+    # discard selected entity and update screen (if CAPS-LOCK is not enabled)
     def discard_selected_item():
         nonlocal selected_entity
+        nonlocal root_viewport_rect, main_viewport_rect, palette_viewport_rect
         if selected_entity:
-            selected_entity = None
-            update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
+            if not key_mods & pygame.KMOD_CAPS:
+                # discard selected entity
+                selected_entity = None
+                update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
+            else:
+                # keep selected entity
+                update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redraw_board=True, selected_entity=selected_entity, cursor_position=event.pos)
     
     # recalculate board dimensions, recalculate viewports, and update screen
     def refresh_layout():
@@ -267,34 +273,53 @@ def run_editor(board=None):
                         update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redraw_board=False, selected_entity=selected_entity, cursor_position=event.pos)
 
             elif event.type == pygame.KEYDOWN:
-                pressed_keys.add(event.key)
+                key_mods = pygame.key.get_mods()
 
                 # handle board size changes
                 board_size_changed = False
+                decreasing = key_mods & pygame.KMOD_SHIFT
+                increasing = not decreasing
+                # # format (x, y, delta)
+                # size_delta = [0, 0, 0]  # one of (0,0,0), (-1,0,1),  (1,0,1),  (0,-1,1),  (0,1,1),
+                #                         #                 (-1,0,-1), (1,0,-1), (0,-1,-1), (0,1,-1)
                 if event.key == pygame.K_UP:
-                    if board_height < BOARD_HEIGHT_RANGE[1]:
+                    if increasing and board_height < BOARD_HEIGHT_RANGE[1]:
                         board.insert(0, [[] for _ in range(board_width)])
                         board_size_changed = True
-                elif event.key == pygame.K_DOWN:
-                    if board_height > BOARD_HEIGHT_RANGE[0]:
+                    elif decreasing and board_height > BOARD_HEIGHT_RANGE[0]:
                         board.pop(0)
                         board_size_changed = True
+                elif event.key == pygame.K_DOWN:
+                    if increasing and board_height < BOARD_HEIGHT_RANGE[1]:
+                        board.append([[] for _ in range(board_width)])
+                        board_size_changed = True
+                    elif decreasing and board_height > BOARD_HEIGHT_RANGE[0]:
+                        board.pop()
+                        board_size_changed = True
                 elif event.key == pygame.K_RIGHT:
-                    if board_width < BOARD_WIDTH_RANGE[1]:
-                        for row in board:
-                            row.append([])
+                    if increasing and board_width < BOARD_WIDTH_RANGE[1]:
+                        for row in board: row.append([])
+                        board_size_changed = True
+                    elif decreasing and board_height > BOARD_WIDTH_RANGE[0]:
+                        for row in board: row.pop()
                         board_size_changed = True
                 elif event.key == pygame.K_LEFT:
-                    if board_width > BOARD_WIDTH_RANGE[0]:
-                        for row in board:
-                            row.pop()
+                    if increasing and board_width < BOARD_WIDTH_RANGE[1]:
+                        for row in board: row.insert(0, [])
                         board_size_changed = True
+                    elif decreasing and board_height > BOARD_WIDTH_RANGE[0]:
+                        for row in board: row.pop()
+                        board_size_changed = True
+                    # if board_width > BOARD_WIDTH_RANGE[0]:
+                    #     for row in board:
+                    #         row.pop()
+                    #     board_size_changed = True
                 
                 if board_size_changed:
                     refresh_layout()
                 
                 # handle keyboard shortcuts
-                if pygame.K_LCTRL in pressed_keys or pygame.K_RCTRL in pressed_keys:
+                if key_mods & pygame.KMOD_CTRL:
                     if event.key == pygame.K_o:
                         # Open
                         if board_save_state != board:
@@ -309,7 +334,7 @@ def run_editor(board=None):
                             print(f"opened {level_filename}")
 
                     elif event.key == pygame.K_s:
-                        if pygame.K_LSHIFT in pressed_keys or pygame.K_RSHIFT in pressed_keys:
+                        if key_mods & pygame.KMOD_SHIFT:
                             # Save as
                             if res := ask_save_as_filename(**FILE_DIALOG_OPTIONS):
                                 level_filename = res
@@ -333,20 +358,21 @@ def run_editor(board=None):
                     if playtest_process is None or not playtest_process.is_alive():
                         playtest_process = Process(target=play_level, args=(Level(board_copy(board), logging=False),))
                         playtest_process.start()
-            
-            elif event.type == pygame.KEYUP:
-                if event.key in pressed_keys:
-                    pressed_keys.remove(event.key)
 
+            elif event.type == pygame.KEYUP:
+                key_mods = pygame.key.get_mods()
 
 USAGE_TEXT = """
-    +----------- SHORTCUTS -----------+
-    |  Open:        CTRL + O          |
-    |  Save:        CTRL + S          |
-    |  Save as:     CTRL + SHIFT + S  |
-    |  Playtest:    SPACE             |
-    |  Change size: ARROW KEYS        |
-    +---------------------------------+\
+    +------------- SHORTCUTS -------------+
+    |  Open:       CTRL + O               |
+    |  Save:       CTRL + S               |   
+    |  Save as:    CTRL + SHIFT + S       |
+    |  ---------------------------------  |     
+    |  Size++:        ARROW-KEYS          |
+    |  Size--:        SHIFT + ARROW-KEYS  |
+    |  Repeat mode:   CAPS-LOCK           |
+    |  Playtest:      SPACE               |
+    +-------------------------------------+\
 """
 
 

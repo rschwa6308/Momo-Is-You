@@ -310,10 +310,6 @@ def run_editor(board=None):
                     elif decreasing and board_height > BOARD_WIDTH_RANGE[0]:
                         for row in board: row.pop()
                         board_size_changed = True
-                    # if board_width > BOARD_WIDTH_RANGE[0]:
-                    #     for row in board:
-                    #         row.pop()
-                    #     board_size_changed = True
                 
                 if board_size_changed:
                     refresh_layout()

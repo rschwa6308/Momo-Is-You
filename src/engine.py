@@ -69,20 +69,24 @@ class Level:
                 self.parse_rules_from_board()
                 board_state_changed = True
         else:
-            self.board_history.append(board_copy(self.board))  # add copy of current board state to history
+            old_board = board_copy(self.board)
 
-            if key in (Level.UP, Level.DOWN, Level.LEFT, Level.RIGHT):
-                if self.handle_motion(key):     # always handle motion
-                    board_state_changed = True
+            # handle motion
+            board_state_changed |= self.handle_motion(key)
 
-            if self.apply_proactive_rules():    # always apply proactive rules
-                board_state_changed = True
-
-            if board_state_changed:             # only re-parse when board state has been changed
+            # apply proactive rules
+            board_state_changed |= self.apply_proactive_rules()
+            
+            # re-parse rules (only when board state has been changed)
+            if board_state_changed:
                 self.parse_rules_from_board()
 
-            if self.apply_reactive_rules():     # always apply reactive rules
-                board_state_changed = True
+            # apply reactive rules
+            board_state_changed |= self.apply_reactive_rules()
+        
+            # add copy of old board to state to history (if necessary)
+            if board_state_changed:
+                self.board_history.append(old_board)
         
         return board_state_changed
 
@@ -91,6 +95,9 @@ class Level:
 
     # Handles all level motion (assumes that self.rules_dict is constant); returns true iff board state is changed
     def handle_motion(self, direction_key):
+        if direction_key not in (Level.UP, Level.DOWN, Level.LEFT, Level.RIGHT):
+            return False
+
         if self.logging: print("\thandle_motion(%s)" % direction_key)
 
         yous = []

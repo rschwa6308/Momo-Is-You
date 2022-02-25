@@ -211,6 +211,12 @@ def run_editor(board=None):
 
     refresh_caption()
 
+    # restore the initial VIDEORESIZE event (removed in Pygame 2.1)
+    pygame.event.post(pygame.event.Event(
+        pygame.VIDEORESIZE,
+        {"w": STARTING_SCREEN_WIDTH, "h": STARTING_SCREEN_HEIGHT}
+    ))
+
     # main game loop
     clock = pygame.time.Clock()
     editor_alive = True
@@ -368,7 +374,7 @@ USAGE_TEXT = """
     |  Size--:        SHIFT + ARROW-KEYS  |
     |  Repeat mode:   CAPS-LOCK           |
     |  Playtest:      SPACE               |
-    +-------------------------------------+\
+    +-------------------------------------+
 """
 
 

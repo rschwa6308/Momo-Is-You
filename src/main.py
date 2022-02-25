@@ -79,6 +79,12 @@ def play_level(level):
         if level.process_input(key_map[key]):
             update_screen(screen, level, viewport_rect)
 
+    # restore the initial VIDEORESIZE event (removed in Pygame 2.1)
+    pygame.event.post(pygame.event.Event(
+        pygame.VIDEORESIZE,
+        {"w": STARTING_SCREEN_WIDTH, "h": STARTING_SCREEN_HEIGHT}
+    ))
+
     # main game loop
     clock = pygame.time.Clock()
     level_alive = True
@@ -111,7 +117,7 @@ def play_level(level):
                 repeating_inputs = True
 
             if repeating_inputs and current_timestamp - last_input_timestamp > INPUT_REPEAT_PERIOD_MS:
-                process_keypress(event.key)
+                process_keypress(currently_pressed)
 
         if level.has_won:
             print("\nCongrats! You beat the level!")
@@ -121,5 +127,5 @@ def play_level(level):
 
 if __name__ == "__main__":
     # load a test level (with logging disabled)
-    test_level = Level(levels[2], logging=False)
+    test_level = Level(levels[0], logging=False)
     play_level(test_level)

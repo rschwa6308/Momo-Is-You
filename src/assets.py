@@ -1,6 +1,6 @@
 # Loading Assets from disc
 
-import pygame
+import pygame as pg
 import os
 
 ASSETS_DIRECTORY_NAME = "assets"
@@ -18,5 +18,5 @@ src_images = {}
 for filename in src_image_filenames:
     id = "_".join(filename.split("_")[:-1]) + "_src"
     path = os.path.join(ASSETS_DIRECTORY_PATH, filename)
-    image = pygame.image.load(path)
+    image = pg.image.load(path)
     src_images.update({id: image})

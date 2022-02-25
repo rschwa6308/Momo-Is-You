@@ -1,7 +1,7 @@
 # --- UI Helpers used by both main and level_editor --- #
 
 from functools import lru_cache
-import pygame
+import pygame as pg
 
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -135,13 +135,13 @@ entity_map = {
 
 # Scales given surface to given size and returns results (expensive, results should be cached)
 def get_scaled_image(surface, size):
-    return pygame.transform.smoothscale(surface, (size, size))
+    return pg.transform.smoothscale(surface, (size, size))
 
 
 # Binary search to find font size with correct height to fill tile with 2 chars vertically and 3 horizontally
 @lru_cache(maxsize=20)  # for good measure
 def get_font(name, tile_size_px):
-    pygame.font.init()
+    pg.font.init()
 
     size_lower_bound = 8
     size_upper_bound = 200
@@ -151,7 +151,7 @@ def get_font(name, tile_size_px):
     font = None
     size = target_size_px  # initial guess
     while size_upper_bound - size_lower_bound > 1:
-        font = pygame.font.SysFont(name, size, bold=True)
+        font = pg.font.SysFont(name, size, bold=True)
         text_size_px = max(font.size("M"))
         error = text_size_px - target_size_px
         # print(size, error, size_lower_bound, size_upper_bound)
@@ -177,13 +177,13 @@ def draw_text_card_onto_tile(tile, color):
     tile_size_px = tile.get_width()
     corner_radius = tile_size_px // 6
 
-    pygame.draw.rect(tile, color, pygame.Rect(0, corner_radius, tile_size_px, tile_size_px - corner_radius * 2))  # hor
-    pygame.draw.rect(tile, color, pygame.Rect(corner_radius, 0, tile_size_px - corner_radius * 2, tile_size_px))  # vert
+    pg.draw.rect(tile, color, pg.Rect(0, corner_radius, tile_size_px, tile_size_px - corner_radius * 2))  # hor
+    pg.draw.rect(tile, color, pg.Rect(corner_radius, 0, tile_size_px - corner_radius * 2, tile_size_px))  # vert
 
-    pygame.draw.circle(tile, color, (corner_radius, corner_radius), corner_radius)
-    pygame.draw.circle(tile, color, (tile_size_px - corner_radius, corner_radius), corner_radius)
-    pygame.draw.circle(tile, color, (corner_radius, tile_size_px - corner_radius), corner_radius)
-    pygame.draw.circle(tile, color, (tile_size_px - corner_radius, tile_size_px - corner_radius), corner_radius)
+    pg.draw.circle(tile, color, (corner_radius, corner_radius), corner_radius)
+    pg.draw.circle(tile, color, (tile_size_px - corner_radius, corner_radius), corner_radius)
+    pg.draw.circle(tile, color, (corner_radius, tile_size_px - corner_radius), corner_radius)
+    pg.draw.circle(tile, color, (tile_size_px - corner_radius, tile_size_px - corner_radius), corner_radius)
 
 
 # Returns surface of size (tile_size_px, tile_size_px) for the given entity; cached for performance
@@ -195,7 +195,7 @@ def get_entity_image(entity, tile_size_px):
         return get_scaled_image(src_image, tile_size_px)
     else:
         # render text
-        img = pygame.Surface((tile_size_px, tile_size_px), pygame.SRCALPHA)
+        img = pg.Surface((tile_size_px, tile_size_px), pg.SRCALPHA)
         if isinstance(entity, Text):
             font = get_font("comicsansms", tile_size_px)
             text_str = entity_map[entity]["text_str"]
@@ -209,10 +209,10 @@ def get_entity_image(entity, tile_size_px):
             if isinstance(entity, Adjectives):
                 draw_text_card_onto_tile(img, entity_map[entity]["text_color"])
                 text_color = (0, 0, 0, 255)
-                blend_mode = pygame.BLEND_RGBA_SUB
+                blend_mode = pg.BLEND_RGBA_SUB
             else:
                 text_color = entity_map[entity]["text_color"]
-                blend_mode = pygame.BLEND_RGBA_MAX
+                blend_mode = pg.BLEND_RGBA_MAX
 
             text_images = [font.render(substr, True, text_color) for substr in text_substrings]
             locations = text_locations[len(text_images)]
@@ -228,6 +228,7 @@ def get_entity_image(entity, tile_size_px):
 
 
 # Assumes given viewport surface has same exact aspect ratio as board (only draws squares)
+# TODO: lerp between locations over some fixed animation timestep (possibly INPUT_REPEAT_PERIOD_MS/2)
 def draw_board_onto_viewport(viewport, board, bg_color, grid_color=None):
     viewport.fill(bg_color)
 
@@ -247,15 +248,15 @@ def draw_board_onto_viewport(viewport, board, bg_color, grid_color=None):
 
     if grid_color is not None:
         viewport_width, viewport_height = viewport.get_size()
-        grid_surface = pygame.Surface((viewport_width, viewport_height), pygame.SRCALPHA)
+        grid_surface = pg.Surface((viewport_width, viewport_height), pg.SRCALPHA)
         line_width = 1 + tile_size_px // 50
 
         for y in range(1, board_height):  # hor
             y_px = y * tile_size_px
-            pygame.draw.line(grid_surface, grid_color, (0, y_px), (viewport_width, y_px), line_width)
+            pg.draw.line(grid_surface, grid_color, (0, y_px), (viewport_width, y_px), line_width)
         for x in range(1, board_width):  # vert
             x_px = x * tile_size_px
-            pygame.draw.line(grid_surface, grid_color, (x_px, 0), (x_px, viewport_height), line_width)
+            pg.draw.line(grid_surface, grid_color, (x_px, 0), (x_px, viewport_height), line_width)
 
         viewport.blit(grid_surface, (0, 0))
 

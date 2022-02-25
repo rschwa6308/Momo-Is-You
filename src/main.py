@@ -2,7 +2,7 @@
 # August 2019
 
 import os
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"   # grrr
+os.environ['pg_HIDE_SUPPORT_PROMPT'] = "hide"   # grrr
 
 from engine import Level
 from levels import levels
@@ -18,26 +18,33 @@ SCREEN_BACKGROUND_COLOR = (25, 25, 32)
 VIEWPORT_BACKGROUND_COLOR = (15, 15, 15)
 
 TARGET_FPS = 60
-INPUT_REPEAT_BUFFER_MS = 500   # time the key must be held for before repeat inputs are registered
-INPUT_REPEAT_PERIOD_MS = 100   # time between registered inputs when key is held
+INPUT_REPEAT_BUFFER_MS = 300   # time the key must be held for before entering repeat mode
+INPUT_REPEAT_PERIOD_MS = 100   # time between registered inputs when in repeat mode
+
 
 key_map = {
-    pygame.K_UP: Level.UP,
-    pygame.K_DOWN: Level.DOWN,
-    pygame.K_LEFT: Level.LEFT,
-    pygame.K_RIGHT: Level.RIGHT,
-    pygame.K_SPACE: Level.WAIT,
-    pygame.K_z: Level.UNDO,
-    pygame.K_r: Level.RESTART
+    pg.K_UP: Level.UP,
+    pg.K_DOWN: Level.DOWN,
+    pg.K_LEFT: Level.LEFT,
+    pg.K_RIGHT: Level.RIGHT,
+
+    pg.K_w: Level.UP,
+    pg.K_s: Level.DOWN,
+    pg.K_a: Level.LEFT,
+    pg.K_d: Level.RIGHT,
+
+    pg.K_SPACE: Level.WAIT,
+    pg.K_z: Level.UNDO,
+    pg.K_r: Level.RESTART
 }
 
 
 # Draw the level onto a fresh viewport surface, blit it to the screen, and flip the display
 def update_screen(screen, level, viewport_rect):
-    viewport = pygame.Surface((viewport_rect.width, viewport_rect.height))
+    viewport = pg.Surface((viewport_rect.width, viewport_rect.height))
     draw_board_onto_viewport(viewport, level.board, VIEWPORT_BACKGROUND_COLOR)
     screen.blit(viewport, viewport_rect)
-    pygame.display.update(viewport_rect)
+    pg.display.update(viewport_rect)
 
 
 # Size the viewport to both preserve level.board's aspect ratio and respect VIEWPORT_MIN_PADDING
@@ -49,14 +56,14 @@ def get_viewport_rect(screen_width_px, screen_height_px, level_width_tiles, leve
     viewport_width = level_width_tiles * pixels_per_tile
     viewport_height = level_height_tiles * pixels_per_tile
 
-    return pygame.Rect(
+    return pg.Rect(
         ((screen_width_px - viewport_width) // 2, (screen_height_px - viewport_height) // 2),  # centered in screen
         (viewport_width, viewport_height)
     )
 
 
 def get_initialized_screen(screen_width_px, screen_height_px):
-    new_screen = pygame.display.set_mode((screen_width_px, screen_height_px), pygame.RESIZABLE)
+    new_screen = pg.display.set_mode((screen_width_px, screen_height_px), pg.RESIZABLE)
     new_screen.fill(SCREEN_BACKGROUND_COLOR)
     return new_screen
 
@@ -74,44 +81,45 @@ def play_level(level):
     # store the input timestamp, send the input to the level, update the screen
     def process_keypress(key):
         nonlocal last_input_timestamp
-        last_input_timestamp = pygame.time.get_ticks()
+        last_input_timestamp = pg.time.get_ticks()
         # only update the screen when the board state changes
         if level.process_input(key_map[key]):
             update_screen(screen, level, viewport_rect)
 
-    # restore the initial VIDEORESIZE event (removed in Pygame 2.1)
-    pygame.event.post(pygame.event.Event(
-        pygame.VIDEORESIZE,
+    # restore the initial VIDEORESIZE event (removed in pg 2.1)
+    pg.event.post(pg.event.Event(
+        pg.VIDEORESIZE,
         {"w": STARTING_SCREEN_WIDTH, "h": STARTING_SCREEN_HEIGHT}
     ))
 
     # main game loop
-    clock = pygame.time.Clock()
+    clock = pg.time.Clock()
     level_alive = True
     while level_alive:
         clock.tick(TARGET_FPS)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
                 level_alive = False
-            elif event.type == pygame.KEYDOWN:
+            elif event.type == pg.KEYDOWN:
                 if event.key in key_map.keys():
                     process_keypress(event.key)
                     currently_pressed = event.key
-            elif event.type == pygame.KEYUP:
+            elif event.type == pg.KEYUP:
                 if event.key == currently_pressed:
                     currently_pressed = None
                     repeating_inputs = False
-            elif event.type == pygame.VIDEORESIZE:
+            elif event.type == pg.VIDEORESIZE:
                 new_screen_width = max(event.w, MIN_SCREEN_WIDTH)
                 new_screen_height = max(event.h, MIN_SCREEN_HEIGHT)
                 screen = get_initialized_screen(new_screen_width, new_screen_height)
-                pygame.display.update()
+                pg.display.update()
                 viewport_rect = get_viewport_rect(new_screen_width, new_screen_height, level.width, level.height)
                 update_screen(screen, level, viewport_rect)
 
+        # handle repeat mode inputs
         if currently_pressed is not None:
-            current_timestamp = pygame.time.get_ticks()
+            current_timestamp = pg.time.get_ticks()
 
             if current_timestamp - last_input_timestamp > INPUT_REPEAT_BUFFER_MS:
                 repeating_inputs = True
@@ -121,7 +129,7 @@ def play_level(level):
 
         if level.has_won:
             print("\nCongrats! You beat the level!")
-            pygame.time.wait(1000)
+            pg.time.wait(1000)
             level_alive = False
 
 

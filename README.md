@@ -29,6 +29,10 @@ The theme is based on the beloved television series *Avatar: The Last Airbender*
    - `HAS`
 
 ### TODO
+ - graphical improvements
+   - add basic animation (lerp sprites between steps)
+   - gray out text when not used in active sentence
+   - context-aware tileable sprites (e.g. `WALL` and `WATER`)
  - menu and level-select screens
  - more levels
  - more game mechanics
@@ -41,4 +45,3 @@ The theme is based on the beloved television series *Avatar: The Last Airbender*
    - `ON`
    - text conflicts (red strikethrough)
  - rename `ROCK` to `EARTH`, add a `FIRE` object, and make `AIR` correspond to empty tiles
- - context-aware tilable sprites (e.g. `WALL` and `WATER`)

@@ -1,8 +1,8 @@
 # Standalone GUI Applet for creating levels
 
 import os
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import pygame
+os.environ['pg_HIDE_SUPPORT_PROMPT'] = "hide"
+import pygame as pg
 
 from multiprocessing import Process
 
@@ -71,14 +71,14 @@ def update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redr
 
     global board_layer_cache
     if redraw_board or board_layer_cache is None:
-        board_layer = pygame.Surface((main_viewport_rect.width, main_viewport_rect.height))
+        board_layer = pg.Surface((main_viewport_rect.width, main_viewport_rect.height))
         draw_board_onto_viewport(board_layer, board, VIEWPORT_BACKGROUND_COLOR, GRID_COLOR)
         board_layer_cache = board_layer.copy()
     else:
         board_layer = board_layer_cache
     screen.blit(board_layer, main_viewport_rect)
 
-    palette_layer = pygame.Surface((palette_viewport_rect.width, palette_viewport_rect.height))
+    palette_layer = pg.Surface((palette_viewport_rect.width, palette_viewport_rect.height))
     draw_board_onto_viewport(palette_layer, PALETTE_BOARD, VIEWPORT_BACKGROUND_COLOR)
 
     screen.blit(palette_layer, palette_viewport_rect)
@@ -90,7 +90,7 @@ def update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redr
         draw_pos = (cursor_position[0] - tile_size_px // 2, cursor_position[1] - tile_size_px // 2)
         screen.blit(img, draw_pos)
 
-    pygame.display.update()
+    pg.display.update()
 
 
 # Size the 'root', 'main', and 'palette' viewports to both preserve level.board's aspect ratio and respect VIEWPORT_MIN_PADDING
@@ -103,7 +103,7 @@ def get_viewport_rects(screen_width_px, screen_height_px, board_width_tiles, boa
     root_viewport_width = (board_width_tiles + PALETTE_WIDTH + 1) * pixels_per_tile
     root_viewport_height = board_height_tiles * pixels_per_tile
 
-    root_viewport_rect = pygame.Rect(
+    root_viewport_rect = pg.Rect(
         ((screen_width_px - root_viewport_width) // 2, (screen_height_px - root_viewport_height) // 2),  # centered in screen
         (root_viewport_width, root_viewport_height)
     )
@@ -115,12 +115,12 @@ def get_viewport_rects(screen_width_px, screen_height_px, board_width_tiles, boa
     palette_viewport_width = pixels_per_tile_palette * PALETTE_WIDTH
     palette_viewport_height = pixels_per_tile_palette * PALETTE_HEIGHT
 
-    palette_viewport_rect = pygame.Rect(
+    palette_viewport_rect = pg.Rect(
         (root_viewport_rect.left, root_viewport_rect.top + (root_viewport_height - palette_viewport_height) // 2),
         (palette_viewport_width, palette_viewport_height)
     )
 
-    main_viewport_rect = pygame.Rect(
+    main_viewport_rect = pg.Rect(
         (root_viewport_rect.left + pixels_per_tile_palette * PALETTE_WIDTH + pixels_per_tile, root_viewport_rect.top),
         (board_width_tiles * pixels_per_tile, root_viewport_height)
     )
@@ -129,7 +129,7 @@ def get_viewport_rects(screen_width_px, screen_height_px, board_width_tiles, boa
 
 
 def get_initialized_screen(screen_width_px, screen_height_px):
-    new_screen = pygame.display.set_mode((screen_width_px, screen_height_px), pygame.RESIZABLE)
+    new_screen = pg.display.set_mode((screen_width_px, screen_height_px), pg.RESIZABLE)
     new_screen.fill(SCREEN_BACKGROUND_COLOR)
     return new_screen
 
@@ -172,7 +172,7 @@ def run_editor(board=None):
 
     selected_entity = None
 
-    key_mods = pygame.key.get_mods()
+    key_mods = pg.key.get_mods()
 
     board_save_state = board_copy(board)
 
@@ -183,7 +183,7 @@ def run_editor(board=None):
         nonlocal selected_entity
         nonlocal root_viewport_rect, main_viewport_rect, palette_viewport_rect
         if selected_entity:
-            if not key_mods & pygame.KMOD_CAPS:
+            if not key_mods & pg.KMOD_CAPS:
                 # discard selected entity
                 selected_entity = None
                 update_screen(screen, board, main_viewport_rect, palette_viewport_rect)
@@ -207,38 +207,38 @@ def run_editor(board=None):
             caption = level_filename
         else:
             caption = "~ Unsaved Level ~"
-        pygame.display.set_caption(caption)
+        pg.display.set_caption(caption)
 
     refresh_caption()
 
-    # restore the initial VIDEORESIZE event (removed in Pygame 2.1)
-    pygame.event.post(pygame.event.Event(
-        pygame.VIDEORESIZE,
+    # restore the initial VIDEORESIZE event (removed in pg 2.1)
+    pg.event.post(pg.event.Event(
+        pg.VIDEORESIZE,
         {"w": STARTING_SCREEN_WIDTH, "h": STARTING_SCREEN_HEIGHT}
     ))
 
     # main game loop
-    clock = pygame.time.Clock()
+    clock = pg.time.Clock()
     editor_alive = True
     while editor_alive:
         clock.tick(TARGET_FPS)
 
         # process input
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
                 if board_save_state != board:
                     # if board_save_state is None or any(any(row) for row in board):
                     if not ask_yes_no("Level Editor", "You have unsaved work. Are you sure you want to quit?"):
                         continue
                 editor_alive = False
             
-            elif event.type == pygame.VIDEORESIZE:
+            elif event.type == pg.VIDEORESIZE:
                 new_screen_width = max(event.w, MIN_SCREEN_WIDTH)
                 new_screen_height = max(event.h, MIN_SCREEN_HEIGHT)
                 screen = get_initialized_screen(new_screen_width, new_screen_height)
                 refresh_layout()
             
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     # handle main viewport clicks
                     if main_viewport_rect.collidepoint(event.pos):
@@ -273,43 +273,43 @@ def run_editor(board=None):
                 elif event.button == 3:
                     discard_selected_item()
             
-            elif event.type == pygame.MOUSEMOTION:
+            elif event.type == pg.MOUSEMOTION:
                 if selected_entity:
                     if root_viewport_rect.collidepoint(event.pos):
                         update_screen(screen, board, main_viewport_rect, palette_viewport_rect, redraw_board=False, selected_entity=selected_entity, cursor_position=event.pos)
 
-            elif event.type == pygame.KEYDOWN:
-                key_mods = pygame.key.get_mods()
+            elif event.type == pg.KEYDOWN:
+                key_mods = pg.key.get_mods()
 
                 # handle board size changes
                 board_size_changed = False
-                decreasing = key_mods & pygame.KMOD_SHIFT
+                decreasing = key_mods & pg.KMOD_SHIFT
                 increasing = not decreasing
                 # # format (x, y, delta)
                 # size_delta = [0, 0, 0]  # one of (0,0,0), (-1,0,1),  (1,0,1),  (0,-1,1),  (0,1,1),
                 #                         #                 (-1,0,-1), (1,0,-1), (0,-1,-1), (0,1,-1)
-                if event.key == pygame.K_UP:
+                if event.key == pg.K_UP:
                     if increasing and board_height < BOARD_HEIGHT_RANGE[1]:
                         board.insert(0, [[] for _ in range(board_width)])
                         board_size_changed = True
                     elif decreasing and board_height > BOARD_HEIGHT_RANGE[0]:
                         board.pop(0)
                         board_size_changed = True
-                elif event.key == pygame.K_DOWN:
+                elif event.key == pg.K_DOWN:
                     if increasing and board_height < BOARD_HEIGHT_RANGE[1]:
                         board.append([[] for _ in range(board_width)])
                         board_size_changed = True
                     elif decreasing and board_height > BOARD_HEIGHT_RANGE[0]:
                         board.pop()
                         board_size_changed = True
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == pg.K_RIGHT:
                     if increasing and board_width < BOARD_WIDTH_RANGE[1]:
                         for row in board: row.append([])
                         board_size_changed = True
                     elif decreasing and board_height > BOARD_WIDTH_RANGE[0]:
                         for row in board: row.pop()
                         board_size_changed = True
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pg.K_LEFT:
                     if increasing and board_width < BOARD_WIDTH_RANGE[1]:
                         for row in board: row.insert(0, [])
                         board_size_changed = True
@@ -321,8 +321,8 @@ def run_editor(board=None):
                     refresh_layout()
                 
                 # handle keyboard shortcuts
-                if key_mods & pygame.KMOD_CTRL:
-                    if event.key == pygame.K_o:
+                if key_mods & pg.KMOD_CTRL:
+                    if event.key == pg.K_o:
                         # Open
                         if board_save_state != board:
                             if not ask_yes_no("Level Editor", "You have unsaved work that will be overwitten by opening another level. Are you sure you want to continue?"):
@@ -335,8 +335,8 @@ def run_editor(board=None):
                             refresh_caption()
                             print(f"opened {level_filename}")
 
-                    elif event.key == pygame.K_s:
-                        if key_mods & pygame.KMOD_SHIFT:
+                    elif event.key == pg.K_s:
+                        if key_mods & pg.KMOD_SHIFT:
                             # Save as
                             if res := ask_save_as_filename(**FILE_DIALOG_OPTIONS):
                                 level_filename = res
@@ -355,14 +355,14 @@ def run_editor(board=None):
                                 refresh_caption()
                                 print(f"saved to {level_filename}")
                 
-                elif event.key == pygame.K_SPACE:
+                elif event.key == pg.K_SPACE:
                     # spawn a new process running play_level (can only have one alive at a time)
                     if playtest_process is None or not playtest_process.is_alive():
                         playtest_process = Process(target=play_level, args=(Level(board_copy(board), logging=False),))
                         playtest_process.start()
 
-            elif event.type == pygame.KEYUP:
-                key_mods = pygame.key.get_mods()
+            elif event.type == pg.KEYUP:
+                key_mods = pg.key.get_mods()
 
 USAGE_TEXT = """
     +------------- SHORTCUTS -------------+
